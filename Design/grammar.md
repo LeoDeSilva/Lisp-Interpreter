@@ -1,4 +1,6 @@
 # Grammar 
+prog = expr*
+
 expr = atom | list
 
 atom = number | string | identifier 
@@ -8,7 +10,7 @@ list = (OP expr expr) ;OP = +/-/*
      = ( identifier {expr}) ; function call 
      = ( defun identifier ({identifier}) expr)
      = ( if expr expr expr) ; condition then else
-     = (block expr*)
+     = ( block expr* )
      = ( expr )
 
 

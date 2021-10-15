@@ -4,7 +4,8 @@ import (
     "fmt"
     "os"
     "io/ioutil"
-    "github.com/leoDesilva/lisp-interpreter/lexer"
+    "github.com/leoDesilva/lisp-interpreter/interpreter"
+    "strings"
 )
 
 func ReadFile(filename string) string{
@@ -14,12 +15,20 @@ func ReadFile(filename string) string{
 }
 
 func main(){
+    type Lex = interpreter.Lexer
+
     filename := os.Args[1]
     file := ReadFile(filename)
-    fmt.Println(file)
+    formattedFile := strings.Replace(file, `\n`, ``, -1)
 
-    lexer := Lexer{file,string(file[0]),0}
-    fmt.Println(lexer)
+    lexer := Lex{
+        File: formattedFile,
+        Char: string(formattedFile[0]),
+        Index: 0,
+    }
 
-    fmt.Println(IsLexer)
+    fmt.Println(lexer.File)
+
+    tokens := interpreter.Lex(&lexer)
+    fmt.Println(tokens)
 }
