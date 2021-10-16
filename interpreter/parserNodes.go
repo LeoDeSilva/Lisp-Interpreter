@@ -1,5 +1,10 @@
 package interpreter
 
+type BlockNode struct {
+    Type string 
+    Block []interface{}
+}
+
 type FunctionCallNode struct {
     Type string
     Identifier string
@@ -14,9 +19,8 @@ type VarAssignNode struct {
 
 type BinOpNode struct {
     Type string
-    LeftNode interface{}
     Op string 
-    RightNode interface{}
+    Operand []interface{}
 }
 
 type IntNode struct {

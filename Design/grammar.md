@@ -3,7 +3,10 @@ prog = expr*
 
 expr = atom | list
 
-atom = number | string | identifier 
+atom = number 
+     = string
+     = identifier 
+     = - (expr)
 
 list = (OP expr expr) ;OP = +/-/*
      = ( setf identifier expr)

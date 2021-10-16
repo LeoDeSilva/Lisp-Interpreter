@@ -1,3 +1,6 @@
-(setf x (+ (1) ((+ 20 10)) ))
-(- 10 2)
+(block 
+  (print "Hello world")
+  (setf x 12)
+  (print "x = " x)
+)
 

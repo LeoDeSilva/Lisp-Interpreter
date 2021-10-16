@@ -35,9 +35,11 @@ var TT_VAR_ACCESS = "TT_VAR_ACCESS"
 var TT_BIN_OP = "TT_BIN_OP"
 var TT_VAR_ASSIGN = "TT_VAR_ASSIGN"
 var TT_FUNCTION_CALL = "TT_FUNCTION_CALL"
+var TT_BLOCK = "TT_BLOCK"
 
 var KEYWORDS = map[string]bool{
     "setf":true,
+    "block":true,
 }
 
 type Lexer struct {

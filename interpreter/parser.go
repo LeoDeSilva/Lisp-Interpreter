@@ -66,6 +66,10 @@ func parseList(p *Parser) (interface{}, bool){
              node,err := parseAssignment(p)
              if err {return EmptyNode{TT_EOF}, true}
              return node,false
+         } else if matches(p.Token, "block"){
+             node,err := parseBlock(p)
+             if err {return EmptyNode{TT_EOF}, true}
+             return node,false
          } else if p.Token.Type == TT_IDENTIFIER {
              node, err := parseFunctionCall(p)
              if err {return EmptyNode{TT_EOF}, true}
@@ -84,6 +88,21 @@ func parseList(p *Parser) (interface{}, bool){
 
 
          return EmptyNode{TT_EOF}, true
+}
+
+func parseBlock(p *Parser) (interface{}, bool){
+    next(p)
+
+    var block []interface{}
+
+    for p.Token.Type != TT_RPAREN {
+        op,err := parseExpr(p) 
+        if err {return EmptyNode{TT_EOF}, true}
+        block = append(block,op)
+        next(p)
+    }
+
+    return BlockNode{TT_BLOCK, block}, false
 }
 
 func parseFunctionCall(p *Parser) (interface{}, bool){
@@ -120,14 +139,18 @@ func parseAssignment(p *Parser) (interface{}, bool) {
 func parseBinOp(p *Parser) (interface{}, bool){
     op := p.Token.Type
     next(p)
-    operandA,err := parseExpr(p)
-    next(p)
-    operandB,err := parseExpr(p)
-    next(p)
 
-    if err { return EmptyNode{TT_EOF}, true}
+    var operand []interface{}
 
-    return BinOpNode{TT_BIN_OP, operandA, op, operandB}, false
+    for p.Token.Type != TT_RPAREN {
+        atom,err := parseExpr(p) 
+        if err {return EmptyNode{TT_EOF}, true}
+        operand = append(operand,atom)
+        next(p)
+    }
+
+
+    return BinOpNode{TT_BIN_OP, op, operand}, false
 }
 
 func parseAtom(p *Parser)(interface{}, bool){
@@ -154,7 +177,7 @@ func parseAtom(p *Parser)(interface{}, bool){
             Type: TT_VAR_ACCESS,
             Identifier: p.Token.Value,
         }, false
-    }
+    } 
 
     return node, true
 }
