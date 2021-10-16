@@ -29,6 +29,14 @@ var TT_IDENTIFIER = "TT_IDENTIFIER"
 var TT_INT = "TT_INT"
 var TT_STRING = "TT_STRING"
 
+var TT_EOF = "TT_EOF"
+
+var TT_VAR_ACCESS = "TT_VAR_ACCESS"
+
+var KEYWORDS = map[string]string{
+    "setf":"SETF",
+}
+
 type Lexer struct {
     File string 
     Char string 
@@ -173,10 +181,15 @@ func lexToken(l *Lexer) (Node, bool) {
         stringValue, err := lexString(l)
         if (err) { return Node{"",""}, true }
         return Node{TT_STRING, stringValue}, false
+
     } else if strings.Contains(LETTERS, l.Char) {
         identifier, err := lexIdentifier(l)
         if(err) { return Node{"",""}, true }
+        if KEYWORDS[identifier] != ""{
+            return Node{TT_KEYWORD, identifier}, false
+        }
         return Node{TT_IDENTIFIER, identifier}, false
+
     } else if strings.Contains(DIGITS, l.Char) {
         number, err := lexNumber(l)
         if(err) { return Node{"",""}, true } 
@@ -197,5 +210,6 @@ func Lex(l *Lexer) []Node{
         }
         advance(l) 
     }
+    nodes = append(nodes, Node{TT_EOF, ""})
     return nodes
 }

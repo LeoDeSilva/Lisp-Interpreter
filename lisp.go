@@ -16,6 +16,7 @@ func ReadFile(filename string) string{
 
 func main(){
     type Lex = interpreter.Lexer
+    type Parse = interpreter.Parser
 
     filename := os.Args[1]
     file := ReadFile(filename)
@@ -27,8 +28,14 @@ func main(){
         Index: 0,
     }
 
-    fmt.Println(lexer.File)
-
     tokens := interpreter.Lex(&lexer)
-    fmt.Println(tokens)
+
+    parser := Parse{
+        Tokens: tokens,
+        Token: tokens[0],
+        Index: 0,
+    }
+
+    ast := interpreter.Parse(&parser)
+    fmt.Println(ast)
 }
