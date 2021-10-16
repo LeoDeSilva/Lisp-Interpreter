@@ -36,6 +36,7 @@ func main(){
         Index: 0,
     }
 
-    ast := interpreter.Parse(&parser)
+    ast, err := interpreter.Parse(&parser)
+    if err {return}
     fmt.Println(ast)
 }

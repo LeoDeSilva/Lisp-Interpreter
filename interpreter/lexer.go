@@ -32,9 +32,12 @@ var TT_STRING = "TT_STRING"
 var TT_EOF = "TT_EOF"
 
 var TT_VAR_ACCESS = "TT_VAR_ACCESS"
+var TT_BIN_OP = "TT_BIN_OP"
+var TT_VAR_ASSIGN = "TT_VAR_ASSIGN"
+var TT_FUNCTION_CALL = "TT_FUNCTION_CALL"
 
-var KEYWORDS = map[string]string{
-    "setf":"SETF",
+var KEYWORDS = map[string]bool{
+    "setf":true,
 }
 
 type Lexer struct {
@@ -46,6 +49,7 @@ type Lexer struct {
 type Node struct {
     Type string
     Value string
+    Class string
 }
 
 
@@ -65,6 +69,10 @@ func advance(l *Lexer){
 func retreat(l *Lexer){
     l.Index--
     l.Char = string(l.File[l.Index]) 
+}
+
+func matches(t Node, value string) bool {
+    return t.Value == value
 }
 
 
@@ -123,80 +131,80 @@ func lexDouble(l *Lexer) (Node, bool){
         char := l.Char
         advance(l)
         if char == "=" { 
-            return Node{TT_EE, "=="}, false 
+            return Node{TT_EE, "==", "BIN_OP"}, false 
         } else if char == ">" { 
-            return Node{TT_GTE, ">="}, false 
+            return Node{TT_GTE, ">=", "BIN_OP"}, false 
         } else if char == "<" { 
-            return Node{TT_LTE, ">="}, false 
+            return Node{TT_LTE, ">=", "BIN_OP"}, false 
         } else if char == "!" {
-            return Node{TT_NE, "!="}, false
+            return Node{TT_NE, "!=", "BIN_OP"}, false
         }
     } else{
         if l.Char == "=" { 
-            return Node{TT_EQ, "="}, false
+            return Node{TT_EQ, "=", "EQ"}, false
         } else if l.Char == ">" { 
-            return Node{TT_GT, ">"}, false
+            return Node{TT_GT, ">", "BIN_OP"}, false
         } else if l.Char == "<" { 
-            return Node{TT_LT, ">"}, false
+            return Node{TT_LT, ">", "BIN_OP"}, false
         } else if l.Char == "!" {
-            return Node{TT_NOT, "!"}, false
+            return Node{TT_NOT, "!", "UNARY_OP"}, false
         }
     }
 
-    return Node{"",""}, true
+    return Node{"","","ERROR"}, true
 }
 
 
 func lexToken(l *Lexer) (Node, bool) {
     if l.Char == "(" {
-        return Node{TT_LPAREN,"("}, false 
+        return Node{TT_LPAREN,"(","BRACKET"}, false 
     } else if l.Char == ")" {
-        return Node{TT_RPAREN,")"}, false 
+        return Node{TT_RPAREN,")","BRACKET"}, false 
     } else if l.Char == "+" {
-        return Node{TT_ADD, "+"}, false
+        return Node{TT_ADD, "+", "BIN_OP"}, false
     } else if l.Char == "-" {
-        return Node{TT_SUB, "-"}, false
+        return Node{TT_SUB, "-", "BIN_OP"}, false
     } else if l.Char == "*" {
-        return Node{TT_MUL, "*"}, false
+        return Node{TT_MUL, "*", "BIN_OP"}, false
     } else if l.Char == "/" {
-        return Node{TT_DIV, "/"}, false
+        return Node{TT_DIV, "/", "BIN_OP"}, false
     } else if l.Char == "="{
         node, err := lexDouble(l)
-        if (err) { return Node{"",""}, true }
+        if (err) { return Node{"","","ERROR"}, true }
         return node, false
     } else if l.Char == ">" {
         node, err := lexDouble(l)
-        if (err) { return Node{"",""}, true }
+        if (err) { return Node{"","","ERROR"}, true }
         return node, false
     } else if l.Char == "<" {
         node, err := lexDouble(l)
-        if (err) { return Node{"",""}, true }
+        if (err) { return Node{"","","ERROR"}, true }
         return node, false
     } else if l.Char == "!"{
         node, err := lexDouble(l)
-        if (err) { return Node{"",""}, true }
+        if (err) { return Node{"","","ERROR"}, true }
         return node, false
     } else if l.Char == `"` {
         advance(l)
         stringValue, err := lexString(l)
-        if (err) { return Node{"",""}, true }
-        return Node{TT_STRING, stringValue}, false
+        if (err) { return Node{"","","ERROR"}, true }
+        return Node{TT_STRING, stringValue, "ATOM"}, false
 
     } else if strings.Contains(LETTERS, l.Char) {
         identifier, err := lexIdentifier(l)
-        if(err) { return Node{"",""}, true }
-        if KEYWORDS[identifier] != ""{
-            return Node{TT_KEYWORD, identifier}, false
+        if(err) { return Node{"","","ERROR"}, true }
+        if KEYWORDS[identifier] {
+            return Node{TT_KEYWORD, identifier, "KEYWORD"}, false
         }
-        return Node{TT_IDENTIFIER, identifier}, false
+        return Node{TT_IDENTIFIER, identifier, "ATOM"}, false
 
     } else if strings.Contains(DIGITS, l.Char) {
         number, err := lexNumber(l)
-        if(err) { return Node{"",""}, true } 
-        return Node{TT_INT,number}, false
+        if(err) { return Node{"","","ERROR"}, true } 
+        return Node{TT_INT,number, "ATOM"}, false
     }
 
-    return Node{"",""}, true
+    return Node{"","","ERROR"}, true
 }
 
 
@@ -210,6 +218,6 @@ func Lex(l *Lexer) []Node{
         }
         advance(l) 
     }
-    nodes = append(nodes, Node{TT_EOF, ""})
+    nodes = append(nodes, Node{TT_EOF, "","END"})
     return nodes
 }
