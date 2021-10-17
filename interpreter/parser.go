@@ -20,6 +20,7 @@ func next(p *Parser){
     p.Token = p.Tokens[p.Index]
 }
 
+
 func Parse(p *Parser) ([]interface{}, bool){
     var ast []interface{}
 
@@ -34,6 +35,7 @@ func Parse(p *Parser) ([]interface{}, bool){
     return ast, false
 }
 
+
 func parseExpr(p *Parser) (interface{},bool) {
     if p.Token.Type == TT_LPAREN{
         node,err := parseList(p)
@@ -47,6 +49,7 @@ func parseExpr(p *Parser) (interface{},bool) {
 
     return EmptyNode{TT_EOF}, true
 }
+
 
 func parseList(p *Parser) (interface{}, bool){
          //[x] (OP expr expr*) ;OP = +/-/*/>/</>=
@@ -90,6 +93,7 @@ func parseList(p *Parser) (interface{}, bool){
          return EmptyNode{TT_EOF}, true
 }
 
+
 func parseBlock(p *Parser) (interface{}, bool){
     next(p)
 
@@ -104,6 +108,7 @@ func parseBlock(p *Parser) (interface{}, bool){
 
     return BlockNode{TT_BLOCK, block}, false
 }
+
 
 func parseFunctionCall(p *Parser) (interface{}, bool){
     identifier := p.Token.Value
@@ -122,6 +127,7 @@ func parseFunctionCall(p *Parser) (interface{}, bool){
     
 }
 
+
 func parseAssignment(p *Parser) (interface{}, bool) {
     next(p)
 
@@ -135,6 +141,7 @@ func parseAssignment(p *Parser) (interface{}, bool) {
 
     return VarAssignNode{TT_VAR_ASSIGN, identifier, value}, false
 }
+
 
 func parseBinOp(p *Parser) (interface{}, bool){
     op := p.Token.Type
@@ -152,6 +159,7 @@ func parseBinOp(p *Parser) (interface{}, bool){
 
     return BinOpNode{TT_BIN_OP, op, operand}, false
 }
+
 
 func parseAtom(p *Parser)(interface{}, bool){
     var node interface{}
