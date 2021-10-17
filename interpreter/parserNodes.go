@@ -1,5 +1,20 @@
 package interpreter
 
+type IfNode struct {
+    Type string 
+    Condition interface{}
+    Consequence interface{}
+    Alternative interface{}
+}
+
+type FunctionDefenitionNode struct {
+    Type string 
+    Identifier string 
+    Parameters []interface{} 
+    Block interface{}
+}
+
+
 type BlockNode struct {
     Type string 
     Block []interface{}

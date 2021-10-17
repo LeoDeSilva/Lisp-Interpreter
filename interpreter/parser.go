@@ -52,13 +52,6 @@ func parseExpr(p *Parser) (interface{},bool) {
 
 
 func parseList(p *Parser) (interface{}, bool){
-         //[x] (OP expr expr*) ;OP = +/-/*/>/</>=
-         //[x] ( setf identifier expr)
-         //[x] ( identifier {expr}) ; function call 
-         //[ ] ( defun identifier ({identifier}) expr)
-         //[ ] ( if expr expr expr) ; condition then else
-         //[ ] ( block expr* )
-         //[x] ( expr )
          next(p)
 
          if p.Token.Class == "BIN_OP"{
@@ -73,6 +66,14 @@ func parseList(p *Parser) (interface{}, bool){
              node,err := parseBlock(p)
              if err {return EmptyNode{TT_EOF}, true}
              return node,false
+         } else if matches(p.Token, "defun"){
+            node,err := parseFunctionDefenition(p)
+            if err {return EmptyNode{TT_EOF}, true}
+            return node,false
+         } else if matches(p.Token, "if"){
+            node,err := parseIf(p)
+            if err {return EmptyNode{TT_EOF}, true}
+            return node, false
          } else if p.Token.Type == TT_IDENTIFIER {
              node, err := parseFunctionCall(p)
              if err {return EmptyNode{TT_EOF}, true}
@@ -89,8 +90,54 @@ func parseList(p *Parser) (interface{}, bool){
              return node, false
          }
 
-
          return EmptyNode{TT_EOF}, true
+}
+
+
+func parseIf(p *Parser) (interface{}, bool){
+    next(p)
+    
+    condition, err := parseExpr(p)
+    if err {return EmptyNode{TT_EOF}, true}
+    next(p)
+    
+    consequence, err := parseExpr(p)
+    if err {return EmptyNode{TT_EOF}, true}
+    next(p)
+
+    if p.Token.Type != TT_RPAREN {
+        alternative, err := parseExpr(p)
+        if err {return EmptyNode{TT_EOF}, true}
+        return IfNode{TT_IF, condition, consequence, alternative}, false
+    }
+
+    return IfNode{TT_IF, condition, consequence, EmptyNode{TT_EOF}}, false
+}
+
+
+func parseFunctionDefenition(p *Parser) (interface{}, bool) {
+    next(p)
+
+    if p.Token.Type != TT_IDENTIFIER {return EmptyNode{TT_EOF}, true}
+    identifier := p.Token.Value
+    next(p)
+
+    if p.Token.Type != TT_LPAREN {return EmptyNode{TT_EOF}, true}
+    var parameters []interface{}
+    next(p)
+    for p.Token.Type != TT_RPAREN {
+        if p.Token.Type != TT_IDENTIFIER { return EmptyNode{TT_EOF}, true}
+        parameter := VarAcessNode{TT_VAR_ACCESS, p.Token.Value}
+        parameters = append(parameters,parameter)
+        next(p)
+    } 
+
+    next(p)
+    body, err := parseExpr(p)
+    if err { return EmptyNode{TT_EOF}, true}
+
+    return FunctionDefenitionNode{TT_FUNCTION_DEFENITION, identifier, parameters, body}, false
+
 }
 
 
@@ -98,12 +145,13 @@ func parseBlock(p *Parser) (interface{}, bool){
     next(p)
 
     var block []interface{}
-
+    
+    if p.Token.Type != TT_LPAREN {return EmptyNode{TT_EOF}, true}
     for p.Token.Type != TT_RPAREN {
         op,err := parseExpr(p) 
         if err {return EmptyNode{TT_EOF}, true}
         block = append(block,op)
-        next(p)
+        //next(p)
     }
 
     return BlockNode{TT_BLOCK, block}, false
