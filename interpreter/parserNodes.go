@@ -1,5 +1,12 @@
 package interpreter
 
+type WhileNode struct {
+    Type string 
+    Condition interface{}
+    Consequence interface{}
+}
+
+
 type IfNode struct {
     Type string 
     Condition interface{}

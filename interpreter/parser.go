@@ -75,6 +75,10 @@ func parseList(p *Parser) (interface{}, bool){
             node,err := parseIf(p)
             if err {return EmptyNode{TT_EOF}, true}
             return node, false
+         } else if matches(p.Token, "while"){
+            node,err := parseWhile(p)
+            if err {return EmptyNode{TT_EOF}, true}
+            return node, false
          } else if p.Token.Type == TT_IDENTIFIER {
              node, err := parseFunctionCall(p)
              if err {return EmptyNode{TT_EOF}, true}
@@ -92,6 +96,21 @@ func parseList(p *Parser) (interface{}, bool){
          }
 
          return EmptyNode{TT_EOF}, true
+}
+
+
+func parseWhile(p *Parser) (interface{}, bool) {
+    next(p)
+    
+    condition, err := parseExpr(p)
+    if err {return EmptyNode{TT_EOF}, true}
+    next(p)
+
+    consequence, err := parseExpr(p)
+    if err {return EmptyNode{TT_EOF}, true}
+    next(p)
+
+    return WhileNode{TT_WHILE, condition, consequence}, false
 }
 
 
@@ -127,6 +146,7 @@ func parseFunctionDefenition(p *Parser) (interface{}, bool) {
     if p.Token.Type != TT_LPAREN {return EmptyNode{TT_EOF}, true}
     var parameters []interface{}
     next(p)
+
     for p.Token.Type != TT_RPAREN {
         if p.Token.Type != TT_IDENTIFIER { return EmptyNode{TT_EOF}, true}
         // NOT QUITE VAR ACCESS ass this var will be assigned to the corresponding variable passed though
@@ -141,7 +161,6 @@ func parseFunctionDefenition(p *Parser) (interface{}, bool) {
     next(p)
 
     return FunctionDefenitionNode{TT_FUNCTION_DEFENITION, identifier, parameters, body}, false
-
 }
 
 
@@ -149,22 +168,19 @@ func parseBlock(p *Parser) (interface{}, bool){
     next(p)
 
     var block []interface{}
-    
     if p.Token.Type != TT_LPAREN {return EmptyNode{TT_EOF}, true}
     next(p)
+
     for p.Token.Type != TT_RPAREN {
         op,err := parseExpr(p) 
         if err {return EmptyNode{TT_EOF}, true}
         block = append(block,op)
         next(p)
     }
+
     next(p)
-
-
     return BlockNode{TT_BLOCK, block}, false
 }
-
-//TODO: not parsing next exor
 
 
 func parseFunctionCall(p *Parser) (interface{}, bool){
@@ -172,15 +188,12 @@ func parseFunctionCall(p *Parser) (interface{}, bool){
     next(p)
     
     var parameters []interface{}
-
     for p.Token.Type != TT_RPAREN {
         param,err := parseExpr(p) 
         if err {return EmptyNode{TT_EOF}, true}
         parameters = append(parameters,param)
-        fmt.Println(p.Token)
         next(p)
     }
-
 
     return FunctionCallNode{TT_FUNCTION_CALL, identifier, parameters}, false
     
@@ -207,15 +220,12 @@ func parseBinOp(p *Parser) (interface{}, bool){
     next(p)
 
     var operand []interface{}
-
     for p.Token.Type != TT_RPAREN {
         atom,err := parseExpr(p) 
         if err {return EmptyNode{TT_EOF}, true}
         operand = append(operand,atom)
         next(p)
     }
-
-
 
     return BinOpNode{TT_BIN_OP, op, operand}, false
 }
