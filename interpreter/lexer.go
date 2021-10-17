@@ -7,6 +7,7 @@ import (
 
 var LETTERS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_"
 var DIGITS = "0123456789"
+var LETTERS_DIGITS = LETTERS + DIGITS
 
 var TT_LPAREN = "TT_LPAREN"
 var TT_RPAREN = "TT_RPAREN"
@@ -100,7 +101,7 @@ func lexIdentifier(l *Lexer) (string, bool){
     var identifier string 
 
     for l.Index < len(l.File) - 1 {
-        if strings.Contains(LETTERS, l.Char) {
+        if strings.Contains(LETTERS_DIGITS, l.Char) {
             identifier = identifier + l.Char
         } else{ 
             retreat(l)

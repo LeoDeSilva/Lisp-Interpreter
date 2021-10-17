@@ -25,6 +25,7 @@ func Parse(p *Parser) ([]interface{}, bool){
     var ast []interface{}
 
     for p.Index != -1 && p.Index < len(p.Tokens) {
+        fmt.Println("\n NEXT CMD",p.Token)
         node, err := parseExpr(p)
         if err {return ast, true}
         fmt.Println(node)
@@ -108,6 +109,7 @@ func parseIf(p *Parser) (interface{}, bool){
     if p.Token.Type != TT_RPAREN {
         alternative, err := parseExpr(p)
         if err {return EmptyNode{TT_EOF}, true}
+        next(p)
         return IfNode{TT_IF, condition, consequence, alternative}, false
     }
 
@@ -127,6 +129,7 @@ func parseFunctionDefenition(p *Parser) (interface{}, bool) {
     next(p)
     for p.Token.Type != TT_RPAREN {
         if p.Token.Type != TT_IDENTIFIER { return EmptyNode{TT_EOF}, true}
+        // NOT QUITE VAR ACCESS ass this var will be assigned to the corresponding variable passed though
         parameter := VarAcessNode{TT_VAR_ACCESS, p.Token.Value}
         parameters = append(parameters,parameter)
         next(p)
@@ -135,6 +138,7 @@ func parseFunctionDefenition(p *Parser) (interface{}, bool) {
     next(p)
     body, err := parseExpr(p)
     if err { return EmptyNode{TT_EOF}, true}
+    next(p)
 
     return FunctionDefenitionNode{TT_FUNCTION_DEFENITION, identifier, parameters, body}, false
 
@@ -147,15 +151,20 @@ func parseBlock(p *Parser) (interface{}, bool){
     var block []interface{}
     
     if p.Token.Type != TT_LPAREN {return EmptyNode{TT_EOF}, true}
+    next(p)
     for p.Token.Type != TT_RPAREN {
         op,err := parseExpr(p) 
         if err {return EmptyNode{TT_EOF}, true}
         block = append(block,op)
-        //next(p)
+        next(p)
     }
+    next(p)
+
 
     return BlockNode{TT_BLOCK, block}, false
 }
+
+//TODO: not parsing next exor
 
 
 func parseFunctionCall(p *Parser) (interface{}, bool){
@@ -168,8 +177,10 @@ func parseFunctionCall(p *Parser) (interface{}, bool){
         param,err := parseExpr(p) 
         if err {return EmptyNode{TT_EOF}, true}
         parameters = append(parameters,param)
+        fmt.Println(p.Token)
         next(p)
     }
+
 
     return FunctionCallNode{TT_FUNCTION_CALL, identifier, parameters}, false
     
@@ -203,6 +214,7 @@ func parseBinOp(p *Parser) (interface{}, bool){
         operand = append(operand,atom)
         next(p)
     }
+
 
 
     return BinOpNode{TT_BIN_OP, op, operand}, false
