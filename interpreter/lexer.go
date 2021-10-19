@@ -40,6 +40,7 @@ var TT_BLOCK = "TT_BLOCK"
 var TT_FUNCTION_DEFENITION = "TT_FUNCTION_DEFENITION"
 var TT_IF = "TT_IF"
 var TT_WHILE = "TT_WHILE"
+var TT_PARAMETER = "TT_PARAMETER"
 
 var KEYWORDS = map[string]bool{
     "setf":true,

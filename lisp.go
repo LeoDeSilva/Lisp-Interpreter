@@ -1,7 +1,7 @@
 package main
 
 import (
-    "fmt"
+    //"fmt"
     "os"
     "io/ioutil"
     "github.com/leoDesilva/lisp-interpreter/interpreter"
@@ -17,6 +17,7 @@ func ReadFile(filename string) string{
 func main(){
     type Lex = interpreter.Lexer
     type Parse = interpreter.Parser
+    type Interpret = interpreter.Interpreter
 
     filename := os.Args[1]
     file := ReadFile(filename)
@@ -38,5 +39,15 @@ func main(){
 
     ast, err := interpreter.Parse(&parser)
     if err {return}
-    fmt.Println(ast)
+
+    evaluator := Interpret{
+        AST: ast,
+        Node: ast[0],
+        Index: 0,
+        Variables: make(map[string]interface{}),
+        Functions: make(map[string]interface{}),
+    }
+
+    err = interpreter.Interpret(&evaluator)
+    if err {return}
 }

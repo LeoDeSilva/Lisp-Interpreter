@@ -55,6 +55,11 @@ type VarAcessNode struct {
     Identifier string
 }
 
+type ParameterNode struct {
+    Type string 
+    Identifier string
+}
+
 type StringNode struct {
     Type string 
     Value string

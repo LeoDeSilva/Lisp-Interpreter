@@ -1,7 +1,6 @@
 package interpreter 
 
 import (
-    "fmt"
     "strconv"
 )
 
@@ -25,10 +24,8 @@ func Parse(p *Parser) ([]interface{}, bool){
     var ast []interface{}
 
     for p.Index != -1 && p.Index < len(p.Tokens) {
-        fmt.Println("\n NEXT CMD",p.Token)
         node, err := parseExpr(p)
         if err {return ast, true}
-        fmt.Println(node)
         ast = append(ast, node)
         next(p)
     }
@@ -149,8 +146,7 @@ func parseFunctionDefenition(p *Parser) (interface{}, bool) {
 
     for p.Token.Type != TT_RPAREN {
         if p.Token.Type != TT_IDENTIFIER { return EmptyNode{TT_EOF}, true}
-        // NOT QUITE VAR ACCESS ass this var will be assigned to the corresponding variable passed though
-        parameter := VarAcessNode{TT_VAR_ACCESS, p.Token.Value}
+        parameter := ParameterNode{TT_PARAMETER, p.Token.Value}
         parameters = append(parameters,parameter)
         next(p)
     } 
@@ -230,7 +226,6 @@ func parseBinOp(p *Parser) (interface{}, bool){
     return BinOpNode{TT_BIN_OP, op, operand}, false
 }
 
-
 func parseAtom(p *Parser)(interface{}, bool){
     var node interface{}
 
@@ -259,4 +254,3 @@ func parseAtom(p *Parser)(interface{}, bool){
 
     return node, true
 }
-
