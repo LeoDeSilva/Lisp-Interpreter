@@ -3,26 +3,10 @@ package interpreter
 import (
     "fmt"
     "strconv"
+    "math/rand"
+    "time"
 )
 
-func handlePrint(i *Interpreter, funcNode FunctionCallNode) (interface{}, bool) {
-    var output string
-
-    for _,element := range funcNode.Parameters {
-        v, err := eval(i,element)
-        if err {return nil,true}
-
-        switch val := v.(type) {
-            case string:
-                output += val
-            case int:
-                output += strconv.Itoa(val)
-        } 
-    }
-
-    fmt.Println(output)
-    return output, false
-}
 
 //var DefaultFunctions = map[string]func(FunctionCallNode) (interface{}, bool) { 
     //"print":handlePrint,
@@ -57,6 +41,14 @@ func Interpret(i *Interpreter) bool {
 
 func eval(i *Interpreter, n interface{}) (interface{}, bool) {
     switch node := n.(type) {
+        case IfNode:
+            value, err := evalIf(i,node)
+            if err {return nil,true}
+            return value,false
+        case WhileNode:
+            value, err := evalWhile(i,node)
+            if err {return nil, true}
+            return value, false
         case FunctionCallNode:
             value, err := evalFuncCall(i,node)
             if err {return nil, true}
@@ -69,6 +61,10 @@ func eval(i *Interpreter, n interface{}) (interface{}, bool) {
             value,err := evalBinOp(i,node)
             if err {return nil, true}
             return value, false
+        case BlockNode:
+            value,err := evalBlock(i,node)
+            if err {return nil, true}
+            return value,false
         case VarAcessNode:
             return i.Variables[node.Identifier], false
         case IntNode:
@@ -79,6 +75,58 @@ func eval(i *Interpreter, n interface{}) (interface{}, bool) {
     return nil, true
 }
 
+
+
+func evalWhile(i *Interpreter, whileNode WhileNode) (interface{}, bool) {
+    var condition interface{}
+    var value interface{}
+    var err bool = false
+
+    condition,err = eval(i, whileNode.Condition)
+    if err {return nil, true}
+
+    for condition.(int) != 0 {
+        value,err = eval(i,whileNode.Consequence)
+        if err {return nil, true}
+
+        condition, err = eval(i,whileNode.Condition)
+        if err {return nil, true}
+    }
+
+    return value, false
+
+}
+
+
+func evalBlock(i *Interpreter, blockNode BlockNode) (interface{}, bool) {
+    var err bool = false
+    var value interface{}
+
+    for _,node := range blockNode.Block {
+        value, err = eval(i,node)
+        if err {return nil, true}
+    }
+
+    return value, false
+}
+
+
+func evalIf(i *Interpreter, ifNode IfNode) (interface{}, bool) {
+    condition,err := eval(i, ifNode.Condition)
+    if err {return nil, true}
+
+    if condition == 0 {
+        value,err := eval(i,ifNode.Alternative)
+        if err {return nil, true}
+        return value, false
+    } else {
+        value, err := eval(i,ifNode.Consequence)
+        if err {return nil, true}
+        return value, false
+    }
+
+    return nil, true
+}
 
 
 func evalVarAssign(i *Interpreter, assignNode VarAssignNode) (interface{}, bool) {
@@ -97,6 +145,14 @@ func evalFuncCall(i *Interpreter, funcNode FunctionCallNode) (interface{}, bool)
             value, err := handlePrint(i,funcNode)
             if err {return nil, true}
             return value, false
+        case "len":
+            value,err := handleLen(i,funcNode)
+            if err {return nil, true}
+            return value, false
+        case "rnd":
+            value,err := handleRnd(i,funcNode)
+            if err {return nil, true}
+            return value, false
     }
 
     return nil, false
@@ -106,6 +162,46 @@ func evalFuncCall(i *Interpreter, funcNode FunctionCallNode) (interface{}, bool)
 func evalBinOp(i *Interpreter,opNode BinOpNode) (interface{}, bool) {
     initialOperand, err := eval(i,opNode.Operand[0])
     if err {return nil, true}
+
+    var COMPARISONS = []string{TT_EE,TT_NE,TT_GT,TT_LT,TT_GTE,TT_LTE,}
+    
+    if contains(COMPARISONS, opNode.Op) {
+        operand1, err := eval(i,opNode.Operand[0])
+        operand2, err  := eval(i,opNode.Operand[1])
+        if err {return nil, true}
+
+        var result int = 0
+
+        switch operand1.(type) {
+            case int:
+                switch opNode.Op {
+                    case TT_EE:
+                        if operand1.(int) == operand2.(int) {result = 1}
+                    case TT_NE:
+                        if operand1.(int) != operand2.(int) {result = 1}
+                    case TT_LT:
+                        if operand1.(int) < operand2.(int) {result = 1}
+                    case TT_GT:
+                        if operand1.(int) > operand2.(int) {result = 1}
+                    case TT_LTE:
+                        if operand1.(int) <= operand2.(int) {result = 1}
+                    case TT_GTE:
+                        if operand1.(int) >= operand2.(int) {result = 1}
+                }
+
+            case string:
+                switch opNode.Op {
+                    case TT_EE:
+                        if operand1.(string) == operand2.(string) {result = 1}
+                    case TT_NE:
+                        if operand1.(string) != operand2.(string) {result = 1}
+                }
+
+        }
+
+        return result, false
+
+    } 
 
     switch initialOperand.(type) {
         case string:
@@ -150,4 +246,65 @@ func calculate(op string, result interface{}, value interface{}) interface{}{
     }
 
     return nil
+}
+
+func contains(array []string, element string) bool {
+    for _,e := range array {
+        if e == element {
+            return true
+        }
+    }
+
+    return false
+}
+
+
+// DEFAULT FUNCTIONS 
+
+func handlePrint(i *Interpreter, funcNode FunctionCallNode) (interface{}, bool) {
+    var output string
+
+    for _,element := range funcNode.Parameters {
+        v, err := eval(i,element)
+        if err {return nil,true}
+
+        switch val := v.(type) {
+            case string:
+                output += val
+            case int:
+                output += strconv.Itoa(val)
+        } 
+    }
+
+    fmt.Println(output)
+    return output, false
+}
+
+func handleLen(i *Interpreter, funcNode FunctionCallNode) (interface{}, bool) {
+    rawString, err := eval(i, funcNode.Parameters[0])
+    if err {return nil, true}
+    return len(rawString.(string)), false
+}
+
+func handleRnd(i *Interpreter, funcNode FunctionCallNode) (interface{}, bool) {
+    rand.Seed(time.Now().UnixNano())
+    parameters := funcNode.Parameters
+
+    min := 0
+    max := 0
+    if (len(parameters) >= 2) {
+        minVal,err := eval(i, parameters[0])
+        maxVal,err := eval(i, parameters[1])
+        if err {return nil, true}
+        min = minVal.(int)
+        max = maxVal.(int)
+
+    } else {
+        maxVal, err := eval(i, parameters[0])
+        if err {return nil, true}
+        max = maxVal.(int)
+    }
+
+    return rand.Intn(max - min) + min, false
+
 }

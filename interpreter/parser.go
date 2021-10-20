@@ -164,8 +164,8 @@ func parseBlock(p *Parser) (interface{}, bool){
     next(p)
 
     var block []interface{}
-    if p.Token.Type != TT_LPAREN {return EmptyNode{TT_EOF}, true}
-    next(p)
+    //if p.Token.Type != TT_LPAREN {return EmptyNode{TT_EOF}, true}
+    //next(p)
 
     for p.Token.Type != TT_RPAREN {
         op,err := parseExpr(p) 
@@ -174,7 +174,8 @@ func parseBlock(p *Parser) (interface{}, bool){
         next(p)
     }
 
-    next(p)
+
+    //next(p)
     return BlockNode{TT_BLOCK, block}, false
 }
 
