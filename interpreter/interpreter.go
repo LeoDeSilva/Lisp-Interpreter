@@ -150,6 +150,14 @@ func evalFuncCall(i *Interpreter, funcNode FunctionCallNode, scope map[string]in
             value,err := handleRnd(i,funcNode,scope)
             if err {return nil, true}
             return value, false
+        case "input":
+            value,err := handleInput(i,funcNode,scope)
+            if err {return nil, true}
+            return value, false
+        case "intin":
+            value,err := handleIntInput(i,funcNode,scope)
+            if err {return nil,true}
+            return value, false
     }
 
     if function,contained := i.Functions[funcNode.Identifier]; contained {
@@ -323,4 +331,36 @@ func handleRnd(i *Interpreter, funcNode FunctionCallNode, scope map[string]inter
 
     return rand.Intn(max - min) + min, false
 
+}
+
+func inlinePrint(i *Interpreter, funcNode FunctionCallNode, scope map[string]interface{}) {
+    var output string
+
+    for _,element := range funcNode.Parameters {
+        v, err := eval(i,element,scope)
+        if err {return}
+        
+        switch val := v.(type) {
+            case string:
+                output += val
+            case int:
+                output += strconv.Itoa(val)
+        } 
+    }
+
+    fmt.Printf(output)
+}
+
+func handleInput(i *Interpreter, funcNode FunctionCallNode, scope map[string]interface{}) (interface{}, bool) {
+    inlinePrint(i, funcNode,scope)
+    var input string
+    fmt.Scanln(&input)
+    return input, false
+}
+
+func handleIntInput(i *Interpreter, funcNode FunctionCallNode, scope map[string]interface{}) (interface{}, bool) {
+    inlinePrint(i, funcNode,scope)
+    var input int
+    fmt.Scan(&input)
+    return input, false
 }
