@@ -1,5 +1,5 @@
 # Lisp-Interpreter
-> A languge based on LISP syntax, NOT strictly lisp, I changed some things that in my opinion make the language more useable
+> A languge based on LISP syntax, NOT strictly lisp, I changed some things that in my opinion make the language more useable, this was a quick project to learn the basics of golang
 ## Overview of Syntax
 *every block returns something, e.g. if will return either the  consequence or the alternative, print will return the string, variable assignments will return the value that is being assigned.
 ### Variable assignment
