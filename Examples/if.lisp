@@ -11,4 +11,4 @@
   )
 )
 
-(compare 1 2)
+(compare 2 2)

@@ -8,12 +8,6 @@ import (
 )
 
 
-//var DefaultFunctions = map[string]func(FunctionCallNode) (interface{}, bool) { 
-    //"print":handlePrint,
-//}
-
-
-
 type Interpreter struct {
     AST []interface{}
     Node interface{}
@@ -32,41 +26,44 @@ func proceed(i *Interpreter){
 func Interpret(i *Interpreter) bool {
     for i.Index < len(i.AST) - 1 {
         
-        _,err := eval(i,i.Node)
+        _,err := eval(i,i.Node, i.Variables)
         if err { return true } 
         proceed(i)
     }
     return false
 }
 
-func eval(i *Interpreter, n interface{}) (interface{}, bool) {
+func eval(i *Interpreter, n interface{}, scope map[string]interface{}) (interface{}, bool) {
     switch node := n.(type) {
         case IfNode:
-            value, err := evalIf(i,node)
+            value, err := evalIf(i,node, scope)
             if err {return nil,true}
             return value,false
         case WhileNode:
-            value, err := evalWhile(i,node)
+            value, err := evalWhile(i,node, scope)
             if err {return nil, true}
             return value, false
+        case FunctionDefenitionNode:
+            i.Functions[node.Identifier] = node
+            return nil, false
         case FunctionCallNode:
-            value, err := evalFuncCall(i,node)
+            value, err := evalFuncCall(i,node, scope)
             if err {return nil, true}
             return value, false
         case VarAssignNode:
-            value,err := evalVarAssign(i,node)
+            value,err := evalVarAssign(i,node, scope)
             if err {return nil, true}
             return value, false
         case BinOpNode:
-            value,err := evalBinOp(i,node)
+            value,err := evalBinOp(i,node, scope)
             if err {return nil, true}
             return value, false
         case BlockNode:
-            value,err := evalBlock(i,node)
+            value,err := evalBlock(i,node, scope)
             if err {return nil, true}
             return value,false
         case VarAcessNode:
-            return i.Variables[node.Identifier], false
+            return scope[node.Identifier], false
         case IntNode:
             return node.Value, false
         case StringNode:
@@ -77,19 +74,19 @@ func eval(i *Interpreter, n interface{}) (interface{}, bool) {
 
 
 
-func evalWhile(i *Interpreter, whileNode WhileNode) (interface{}, bool) {
+func evalWhile(i *Interpreter, whileNode WhileNode, scope map[string]interface{}) (interface{}, bool) {
     var condition interface{}
     var value interface{}
     var err bool = false
 
-    condition,err = eval(i, whileNode.Condition)
+    condition,err = eval(i, whileNode.Condition, scope)
     if err {return nil, true}
 
     for condition.(int) != 0 {
-        value,err = eval(i,whileNode.Consequence)
+        value,err = eval(i,whileNode.Consequence, scope)
         if err {return nil, true}
 
-        condition, err = eval(i,whileNode.Condition)
+        condition, err = eval(i,whileNode.Condition, scope)
         if err {return nil, true}
     }
 
@@ -98,12 +95,12 @@ func evalWhile(i *Interpreter, whileNode WhileNode) (interface{}, bool) {
 }
 
 
-func evalBlock(i *Interpreter, blockNode BlockNode) (interface{}, bool) {
+func evalBlock(i *Interpreter, blockNode BlockNode, scope map[string]interface{}) (interface{}, bool) {
     var err bool = false
     var value interface{}
 
     for _,node := range blockNode.Block {
-        value, err = eval(i,node)
+        value, err = eval(i,node,scope)
         if err {return nil, true}
     }
 
@@ -111,16 +108,16 @@ func evalBlock(i *Interpreter, blockNode BlockNode) (interface{}, bool) {
 }
 
 
-func evalIf(i *Interpreter, ifNode IfNode) (interface{}, bool) {
-    condition,err := eval(i, ifNode.Condition)
+func evalIf(i *Interpreter, ifNode IfNode, scope map[string]interface{}) (interface{}, bool) {
+    condition,err := eval(i, ifNode.Condition, scope)
     if err {return nil, true}
 
     if condition == 0 {
-        value,err := eval(i,ifNode.Alternative)
+        value,err := eval(i,ifNode.Alternative,scope)
         if err {return nil, true}
         return value, false
     } else {
-        value, err := eval(i,ifNode.Consequence)
+        value, err := eval(i,ifNode.Consequence,scope)
         if err {return nil, true}
         return value, false
     }
@@ -129,45 +126,64 @@ func evalIf(i *Interpreter, ifNode IfNode) (interface{}, bool) {
 }
 
 
-func evalVarAssign(i *Interpreter, assignNode VarAssignNode) (interface{}, bool) {
+func evalVarAssign(i *Interpreter, assignNode VarAssignNode, scope map[string]interface{}) (interface{}, bool) {
     identifier := assignNode.Identifier
-    value,err := eval(i,assignNode.Value)
+    value,err := eval(i,assignNode.Value,scope)
     if err {return nil, true}
-    i.Variables[identifier] = value
+    scope[identifier] = value
     return value, false
 
 }
 
 
-func evalFuncCall(i *Interpreter, funcNode FunctionCallNode) (interface{}, bool) {
+func evalFuncCall(i *Interpreter, funcNode FunctionCallNode, scope map[string]interface{}) (interface{}, bool) {
     switch funcNode.Identifier {
         case "print":
-            value, err := handlePrint(i,funcNode)
+            value, err := handlePrint(i,funcNode,scope)
             if err {return nil, true}
             return value, false
         case "len":
-            value,err := handleLen(i,funcNode)
+            value,err := handleLen(i,funcNode,scope)
             if err {return nil, true}
             return value, false
         case "rnd":
-            value,err := handleRnd(i,funcNode)
+            value,err := handleRnd(i,funcNode,scope)
             if err {return nil, true}
             return value, false
     }
 
-    return nil, false
+    if function,contained := i.Functions[funcNode.Identifier]; contained {
+        var localScope = make(map[string]interface{})
+        parameterNames := function.(FunctionDefenitionNode).Parameters
+        parameterValues := funcNode.Parameters
+
+        for index,name := range parameterNames {
+            value := parameterValues[index]
+            evalValue, err := eval(i,value,i.Variables)
+            if err {return nil, true}
+            localScope[name.(ParameterNode).Identifier] = evalValue
+        }
+
+        value, err := eval(i,function.(FunctionDefenitionNode).Block,localScope)
+        if err {return nil, true}
+
+        return value,false
+    }
+
+    fmt.Println("Function:",funcNode.Identifier,"does not exist")
+    return nil, true
 }
 
 
-func evalBinOp(i *Interpreter,opNode BinOpNode) (interface{}, bool) {
-    initialOperand, err := eval(i,opNode.Operand[0])
+func evalBinOp(i *Interpreter,opNode BinOpNode, scope map[string]interface{}) (interface{}, bool) {
+    initialOperand, err := eval(i,opNode.Operand[0],scope)
     if err {return nil, true}
 
     var COMPARISONS = []string{TT_EE,TT_NE,TT_GT,TT_LT,TT_GTE,TT_LTE,}
     
     if contains(COMPARISONS, opNode.Op) {
-        operand1, err := eval(i,opNode.Operand[0])
-        operand2, err  := eval(i,opNode.Operand[1])
+        operand1, err := eval(i,opNode.Operand[0],scope)
+        operand2, err  := eval(i,opNode.Operand[1],scope)
         if err {return nil, true}
 
         var result int = 0
@@ -208,7 +224,7 @@ func evalBinOp(i *Interpreter,opNode BinOpNode) (interface{}, bool) {
             var stringResult string = initialOperand.(string)
 
             for _,op := range opNode.Operand[1:] {
-                evalulatedOp, err := eval(i,op)
+                evalulatedOp, err := eval(i,op,scope)
                 if err {return nil, true}
 
                 stringResult += evalulatedOp.(string)
@@ -220,7 +236,7 @@ func evalBinOp(i *Interpreter,opNode BinOpNode) (interface{}, bool) {
             var intResult int = initialOperand.(int)
 
             for _,op := range opNode.Operand[1:] {
-                evalulatedOp, err := eval(i,op)
+                evalulatedOp, err := eval(i,op,scope)
                 if err {return nil, true}
 
                 intResult = calculate(opNode.Op, intResult, evalulatedOp).(int)
@@ -261,11 +277,11 @@ func contains(array []string, element string) bool {
 
 // DEFAULT FUNCTIONS 
 
-func handlePrint(i *Interpreter, funcNode FunctionCallNode) (interface{}, bool) {
+func handlePrint(i *Interpreter, funcNode FunctionCallNode, scope map[string]interface{}) (interface{}, bool) {
     var output string
 
     for _,element := range funcNode.Parameters {
-        v, err := eval(i,element)
+        v, err := eval(i,element,scope)
         if err {return nil,true}
 
         switch val := v.(type) {
@@ -280,27 +296,27 @@ func handlePrint(i *Interpreter, funcNode FunctionCallNode) (interface{}, bool) 
     return output, false
 }
 
-func handleLen(i *Interpreter, funcNode FunctionCallNode) (interface{}, bool) {
-    rawString, err := eval(i, funcNode.Parameters[0])
+func handleLen(i *Interpreter, funcNode FunctionCallNode, scope map[string]interface{}) (interface{}, bool) {
+    rawString, err := eval(i, funcNode.Parameters[0],scope)
     if err {return nil, true}
     return len(rawString.(string)), false
 }
 
-func handleRnd(i *Interpreter, funcNode FunctionCallNode) (interface{}, bool) {
+func handleRnd(i *Interpreter, funcNode FunctionCallNode, scope map[string]interface{}) (interface{}, bool) {
     rand.Seed(time.Now().UnixNano())
     parameters := funcNode.Parameters
 
     min := 0
     max := 0
     if (len(parameters) >= 2) {
-        minVal,err := eval(i, parameters[0])
-        maxVal,err := eval(i, parameters[1])
+        minVal,err := eval(i, parameters[0], scope)
+        maxVal,err := eval(i, parameters[1], scope)
         if err {return nil, true}
         min = minVal.(int)
         max = maxVal.(int)
 
     } else {
-        maxVal, err := eval(i, parameters[0])
+        maxVal, err := eval(i, parameters[0], scope)
         if err {return nil, true}
         max = maxVal.(int)
     }

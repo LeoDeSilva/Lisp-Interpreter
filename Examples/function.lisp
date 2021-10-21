@@ -3,4 +3,4 @@
       (+ num x)
 ))
 
-(make 1 2 3)
+(print (make 1 2 3))
