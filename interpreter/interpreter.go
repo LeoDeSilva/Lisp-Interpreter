@@ -137,6 +137,7 @@ func evalVarAssign(i *Interpreter, assignNode VarAssignNode, scope map[string]in
 
 
 func evalFuncCall(i *Interpreter, funcNode FunctionCallNode, scope map[string]interface{}) (interface{}, bool) {
+    // Default Functions
     switch funcNode.Identifier {
         case "print":
             value, err := handlePrint(i,funcNode,scope)
@@ -161,6 +162,7 @@ func evalFuncCall(i *Interpreter, funcNode FunctionCallNode, scope map[string]in
     }
 
     if function,contained := i.Functions[funcNode.Identifier]; contained {
+        // Define and declare a local scope for the function
         var localScope = make(map[string]interface{})
         parameterNames := function.(FunctionDefenitionNode).Parameters
         parameterValues := funcNode.Parameters
@@ -172,6 +174,7 @@ func evalFuncCall(i *Interpreter, funcNode FunctionCallNode, scope map[string]in
             localScope[name.(ParameterNode).Identifier] = evalValue
         }
 
+        // evaluate the function with the local scope
         value, err := eval(i,function.(FunctionDefenitionNode).Block,localScope)
         if err {return nil, true}
 
