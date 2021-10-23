@@ -104,6 +104,7 @@ func evalBlock(i *Interpreter, blockNode BlockNode, scope map[string]interface{}
         if err {return nil, true}
     }
 
+    // return the value of the final expression in the block
     return value, false
 }
 
