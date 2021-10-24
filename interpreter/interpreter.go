@@ -193,6 +193,7 @@ func evalBinOp(i *Interpreter,opNode BinOpNode, scope map[string]interface{}) (i
 
     var COMPARISONS = []string{TT_EE,TT_NE,TT_GT,TT_LT,TT_GTE,TT_LTE,}
     
+    // Comparisons
     if contains(COMPARISONS, opNode.Op) {
         operand1, err := eval(i,opNode.Operand[0],scope)
         operand2, err  := eval(i,opNode.Operand[1],scope)
@@ -231,6 +232,7 @@ func evalBinOp(i *Interpreter,opNode BinOpNode, scope map[string]interface{}) (i
 
     } 
 
+    //Arithmatic operations
     switch initialOperand.(type) {
         case string:
             var stringResult string = initialOperand.(string)
