@@ -1,5 +1,23 @@
 # Lisp-Interpreter
 > A languge based on LISP syntax, NOT strictly lisp, I changed some things that in my opinion make the language more useable, this was a quick project to learn the basics of golang
+
+To use, simple `git clone` repo and run `go run <prog>.lisp`
+e.g. 
+```lisp
+(setf choiceText "There are 3 doors, a ghost behind 1, which door do you choose: ")
+(setf alive 1)
+(setf score 0)
+
+(while (== alive 1) (block 
+    (setf choice (intin choiceText))
+    (setf ghost (+ (rnd 3) 1))
+    (if (== choice ghost) 
+        (setf alive 0)
+        (block (print "You Survived") (setf score (+ score 1)))
+    )
+))
+(print "You died, your score was " score)
+```
 ## Overview of Syntax
 *every block returns something, e.g. if will return either the  consequence or the alternative, print will return the string, variable assignments will return the value that is being assigned.
 ### Variable assignment
